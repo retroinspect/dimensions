@@ -1,20 +1,20 @@
-var body = document.querySelector('body');
-var port = chrome.runtime.connect({ name: "dimensions" });
-var changeDelay = 300;
-var changeTimeout;
-var paused = true;
-var connectionClosed = false;
-var lineColor = getLineColor();
+const body = document.querySelector('body');
+const port = chrome.runtime.connect({ name: "dimensions" });
+const changeDelay = 300;
+let changeTimeout;
+let paused = true;
+let connectionClosed = false;
+const lineColor = getLineColor();
 const colorThreshold = [0.2, 0.5, 0.2];
-var overlay = document.createElement('div');
+const overlay = document.createElement('div');
 overlay.className = 'fn-noCursor';
-var canvas = document.createElement('canvas');
-var image = new Image();
+const canvas = document.createElement('canvas');
+const image = new Image();
 
-var imgData;
-var data;
-var width;
-var height;
+let imgData;
+let data;
+let width;
+let height;
 
 const dimensionsThreshold = 6;
 
@@ -77,7 +77,7 @@ function destroy() {
 }
 
 function removeDimensions() {
-  var dimensions = body.querySelector('.fn-dimensions');
+  const dimensions = body.querySelector('.fn-dimensions');
   if (dimensions)
     body.removeChild(dimensions);
 }
@@ -164,7 +164,7 @@ function showDimensions(dimensions) {
   if (!dimensions)
     return;
 
-  var newDimensions = document.createElement('div');
+  const newDimensions = document.createElement('div');
   newDimensions.className = 'fn-dimensions';
   newDimensions.style.left = dimensions.x + "px";
   newDimensions.style.top = dimensions.y + "px";
@@ -174,20 +174,20 @@ function showDimensions(dimensions) {
     Math.abs(dimensions.backgroundColor[2] - lineColor[2]) <= colorThreshold[2])
     newDimensions.className += ' altColor';
 
-  var measureWidth = dimensions.left + dimensions.right;
-  var measureHeight = dimensions.top + dimensions.bottom;
+  const measureWidth = dimensions.left + dimensions.right;
+  const measureHeight = dimensions.top + dimensions.bottom;
 
-  var xAxis = document.createElement('div');
+  const xAxis = document.createElement('div');
   xAxis.className = 'x fn-axis';
   xAxis.style.left = -dimensions.left + "px";
   xAxis.style.width = measureWidth + "px";
 
-  var yAxis = document.createElement('div');
+  const yAxis = document.createElement('div');
   yAxis.className = 'y fn-axis';
   yAxis.style.top = -dimensions.top + "px";
   yAxis.style.height = measureHeight + "px";
 
-  var tooltip = document.createElement('div');
+  const tooltip = document.createElement('div');
   tooltip.className = 'fn-tooltip';
 
   // add +1 on both axis because of the pixel below the mouse pointer
@@ -207,14 +207,14 @@ function showDimensions(dimensions) {
 }
 
 function getLineColor() {
-  var axis = document.createElement('div');
+  const axis = document.createElement('div');
   axis.className = 'fn-axis';
 
   body.appendChild(axis);
 
-  var style = getComputedStyle(axis);
-  var rgbString = style.backgroundColor;
-  var colorsOnly = rgbString.substring(rgbString.indexOf('(') + 1, rgbString.lastIndexOf(')')).split(/,\s*/);
+  const style = getComputedStyle(axis);
+  const rgbString = style.backgroundColor;
+  const colorsOnly = rgbString.substring(rgbString.indexOf('(') + 1, rgbString.lastIndexOf(')')).split(/,\s*/);
 
   body.removeChild(axis);
 
@@ -232,28 +232,28 @@ function getLineColor() {
 //
 
 function measureDistances(input) {
-  var distances = {
+  let distances = {
     top: 0,
     right: 0,
     bottom: 0,
     left: 0
   };
-  var directions = {
+  const directions = {
     top: { x: 0, y: -1 },
     right: { x: 1, y: 0 },
     bottom: { x: 0, y: 1 },
     left: { x: -1, y: 0 }
   };
-  var area = 0;
-  var startLightness = getLightnessAt(data, input.x, input.y, width, height);
-  var lastLightness;
+  let area = 0;
+  const startLightness = getLightnessAt(data, input.x, input.y, width, height);
+  let lastLightness;
 
-  for (var direction in distances) {
-    var vector = directions[direction];
-    var boundaryFound = false;
-    var sx = input.x;
-    var sy = input.y;
-    var currentLightness;
+  for (const direction in distances) {
+    const vector = directions[direction];
+    let boundaryFound = false;
+    let sx = input.x;
+    let sy = input.y;
+    let currentLightness;
 
     // reset lightness to start lightness
     lastLightness = startLightness;
@@ -271,21 +271,19 @@ function measureDistances(input) {
     }
 
     area += distances[direction];
-
-
   }
 
   if (area <= 6) {
     distances = { top: 0, right: 0, bottom: 0, left: 0 };
-    var similarColorStreakThreshold = 8;
+    let similarColorStreakThreshold = 8;
 
-    for (var direction in distances) {
-      var vector = directions[direction];
-      var boundaryFound = false;
-      var sx = input.x;
-      var sy = input.y;
-      var currentLightness;
-      var similarColorStreak = 0;
+    for (const direction in distances) {
+      const vector = directions[direction];
+      let boundaryFound = false;
+      let sx = input.x;
+      let sy = input.y;
+      let currentLightness;
+      let similarColorStreak = 0;
 
       lastLightness = startLightness;
 

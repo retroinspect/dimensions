@@ -1,12 +1,8 @@
-
-
-
-
 function getDimensions(values) {
-    var min = Infinity;
-    var max = 0;
+    let min = Infinity;
+    let max = 0;
 
-    for (var i = 0, l = values.length; i < l; i++) {
+    for (let i = 0, l = values.length; i < l; i++) {
         if (values[i] < min)
             min = values[i];
         if (values[i] > max)
@@ -26,9 +22,9 @@ function getColorAt(x, y, imgData, width, height) {
     if (!inBoundaries(x, y, width, height))
         return -1;
 
-    var i = y * width * 4 + x * 4;
+    const i = y * width * 4 + x * 4;
 
-    return rgbToHsl(imgData[i], imgData[++i], imgData[++i]);
+    return rgbToHsl(imgData[i], imgData[i + 1], imgData[i + 1]);
 }
 
 function getLightnessAt(data, x, y, width, height) {
@@ -62,9 +58,9 @@ function inBoundaries(x, y, width, height) {
 //
 
 function grayscale(imgData) {
-    var gray = new Int16Array(imgData.length / 4);
-    for (var i = 0, n = 0, l = imgData.length; i < l; i += 4, n++) {
-        var r = imgData[i],
+    const gray = new Int16Array(imgData.length / 4);
+    for (let i = 0, n = 0, l = imgData.length; i < l; i += 4, n++) {
+        const r = imgData[i],
             g = imgData[i + 1],
             b = imgData[i + 2];
 
@@ -88,13 +84,13 @@ function grayscale(imgData) {
 */
 function rgbToHsl(r, g, b) {
     r /= 255, g /= 255, b /= 255;
-    var max = Math.max(r, g, b), min = Math.min(r, g, b);
-    var h, s, l = (max + min) / 2;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
 
     if (max == min) {
         h = s = 0; // achromatic
     } else {
-        var d = max - min;
+        const d = max - min;
         s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
         switch (max) {
             case r: h = (g - b) / d + (g < b ? 6 : 0); break;

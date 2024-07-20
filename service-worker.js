@@ -1,4 +1,4 @@
-var tabs = {};
+const tabs = {};
 
 function toggle(tab) {
   if (!tabs[tab.id])
@@ -17,13 +17,13 @@ function deactivateTab(id) {
 }
 
 function removeTab(id) {
-  for (var tabId in tabs) {
+  for (const tabId in tabs) {
     if (tabId == id)
       delete tabs[tabId];
   }
 }
 
-var lastBrowserAction = null;
+let lastBrowserAction = null;
 
 chrome.action.onClicked.addListener(function (tab) {
   if (lastBrowserAction && Date.now() - lastBrowserAction < 10) {
@@ -41,12 +41,12 @@ chrome.runtime.onConnect.addListener(function (port) {
 });
 
 chrome.runtime.onSuspend.addListener(function () {
-  for (var tabId in tabs) {
+  for (const tabId in tabs) {
     tabs[tabId].deactivate(true);
   }
 });
 
-var dimensions = {
+const dimensions = {
   alive: true,
 
   activate: function (tab) {
