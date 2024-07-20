@@ -12,25 +12,10 @@ onmessage = function (event) {
       break;
     case 'imgBuffer':
       const eventData = JSON.parse(event.data.stringData);
-      // imgData = new Uint8ClampedArray(eventData.imgBuffer);
-      // imgData = new Uint8ClampedArray(eventData.imgData.buffer);
-      // imgData = eventData.imgData;
       imgData = new Uint8ClampedArray(eventData.imgData);
       width = eventData.width;
       height = eventData.height;
-      // TODO: gray scale does not work
-      // it works for raw img data, but it's extremely slow
-
-      console.log('imgData');
-      console.log(imgData);
-      console.log(typeof (imgData));
-      console.log(imgData.length);
-
       data = grayscale(imgData);
-      // data = imgData;
-
-      console.log('imgData color from worker');
-      console.log(getColorAt(435, 277, imgData, width, height));
 
       postMessage({
         type: "screenshot processed"
@@ -260,8 +245,6 @@ function measureDistances(input) {
       sx += vector.x;
       sy += vector.y;
       currentLightness = getLightnessAt(data, sx, sy, width, height);
-      console.log(currentLightness);
-
       if (currentLightness > -1 && Math.abs(currentLightness - lastLightness) < dimensionsThreshold) {
         distances[direction]++;
         lastLightness = currentLightness;
@@ -318,9 +301,6 @@ function measureDistances(input) {
   distances.y = input.y;
   distances.backgroundColor = getColorAt(input.x, input.y, imgData, width, height);
 
-  console.log('distances:', distances);
-
-
   postMessage({
     type: 'distances',
     data: distances
@@ -338,7 +318,6 @@ function getColorAt(x, y, imgData, width, height) {
 
 function getLightnessAt(data, x, y, width, height) {
   const result = inBoundaries(x, y, width, height) ? data[y * width + x] : -1;
-  console.log('getLightnessAt: ', x, y, width, height, "/ result: ", result);
   return result;
 }
 
@@ -369,10 +348,6 @@ function inBoundaries(x, y, width, height) {
 
 function grayscale(imgData) {
   var gray = new Int16Array(imgData.length / 4);
-
-  console.log('original: ', imgData.length);
-  console.log('grayscale: ', gray.length);
-
   for (var i = 0, n = 0, l = imgData.length; i < l; i += 4, n++) {
     var r = imgData[i],
       g = imgData[i + 1],

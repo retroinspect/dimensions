@@ -52,7 +52,6 @@ port.onMessage.addListener(function (event) {
       destroy();
       break;
     case 'data':
-      console.log('data received', event.data);
       const { width, height, imgDataUrl } = event.data;
       image.src = imgDataUrl;
       image.onload = () => {
@@ -60,15 +59,7 @@ port.onMessage.addListener(function (event) {
         canvas.width = width;
         canvas.height = height;
         ctx.drawImage(image, 0, 0, width, height);
-        // const imgBuffer = ctx.getImageData(0, 0, width, height).data.buffer;
-        // const imgData = new Uint8ClampedArray(imgBuffer);
-
         const imgData = ctx.getImageData(0, 0, width, height).data;
-        console.log('imgData color from browser');
-        console.log(getColorAt(435, 277, imgData, width, height));
-
-        console.log('byteLength: ', imgData.buffer.byteLength);
-
         const view = {
           imgData: Array.from(imgData),
           width,
