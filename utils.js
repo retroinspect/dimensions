@@ -102,3 +102,100 @@ function rgbToHsl(r, g, b) {
 
     return [h, s, l];
 }
+
+
+//
+// measureDistances
+// ================
+//  
+// measures the distances to the next boundary
+// around pageX and pageY.
+//
+function measureDistances(data, imgData, width, height, input) {
+    let distances = {
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0
+    };
+    const directions = {
+        top: { x: 0, y: -1 },
+        right: { x: 1, y: 0 },
+        bottom: { x: 0, y: 1 },
+        left: { x: -1, y: 0 }
+    };
+    let area = 0;
+    const startLightness = getLightnessAt(data, input.x, input.y, width, height);
+    let lastLightness;
+
+    for (const direction in distances) {
+        const vector = directions[direction];
+        let boundaryFound = false;
+        let sx = input.x;
+        let sy = input.y;
+        let currentLightness;
+
+        // reset lightness to start lightness
+        lastLightness = startLightness;
+
+        while (!boundaryFound) {
+            sx += vector.x;
+            sy += vector.y;
+            currentLightness = getLightnessAt(data, sx, sy, width, height);
+            if (currentLightness > -1 && Math.abs(currentLightness - lastLightness) < dimensionsThreshold) {
+                distances[direction]++;
+                lastLightness = currentLightness;
+            } else {
+                boundaryFound = true;
+            }
+        }
+
+        area += distances[direction];
+    }
+
+    if (area <= 6) {
+        distances = { top: 0, right: 0, bottom: 0, left: 0 };
+        let similarColorStreakThreshold = 8;
+
+        for (const direction in distances) {
+            const vector = directions[direction];
+            let boundaryFound = false;
+            let sx = input.x;
+            let sy = input.y;
+            let currentLightness;
+            let similarColorStreak = 0;
+
+            lastLightness = startLightness;
+
+            while (!boundaryFound) {
+                sx += vector.x;
+                sy += vector.y;
+                currentLightness = getLightnessAt(data, sx, sy, width, height);
+
+                if (currentLightness > -1) {
+                    distances[direction]++;
+
+                    if (Math.abs(currentLightness - lastLightness) < dimensionsThreshold) {
+                        similarColorStreak++;
+                        if (similarColorStreak === similarColorStreakThreshold) {
+                            distances[direction] -= (similarColorStreakThreshold + 1);
+                            boundaryFound = true;
+                        }
+                    } else {
+                        lastLightness = currentLightness;
+                        similarColorStreak = 0;
+                    }
+                } else {
+                    boundaryFound = true;
+                }
+            }
+        }
+    }
+
+    distances.x = input.x;
+    distances.y = input.y;
+    distances.backgroundColor = getColorAt(input.x, input.y, imgData, width, height);
+
+    return distances;
+}
+
