@@ -26,7 +26,7 @@ function removeTab(id) {
 
 var lastBrowserAction = null;
 
-chrome.browserAction.onClicked.addListener(function (tab) {
+chrome.action.onClicked.addListener(function (tab) {
   if (lastBrowserAction && Date.now() - lastBrowserAction < 10) {
     // fix bug in Chrome Version 49.0.2623.87
     // that triggers browserAction.onClicked twice 
@@ -56,9 +56,21 @@ var dimensions = {
     this.onBrowserDisconnectClosure = this.onBrowserDisconnect.bind(this);
     this.receiveBrowserMessageClosure = this.receiveBrowserMessage.bind(this);
 
-    chrome.tabs.insertCSS(this.tab.id, { file: 'tooltip.css' });
-    chrome.tabs.executeScript(this.tab.id, { file: 'tooltip.chrome.js' });
-    chrome.browserAction.setIcon({
+    chrome.scripting
+      .insertCSS(
+        {
+          target: { tabId: this.tab.id },
+          files: ['tooltip.css']
+        });
+
+    chrome.scripting.executeScript(
+      {
+        target: { tabId: this.tab.id },
+        files: ['tooltip.chrome.js']
+      });
+
+
+    chrome.action.setIcon({
       tabId: this.tab.id,
       path: {
         16: "images/icon16_active.png",
@@ -68,14 +80,6 @@ var dimensions = {
       }
     });
 
-    this.worker = new Worker("dimensions.js");
-    this.worker.onmessage = this.receiveWorkerMessage.bind(this);
-
-    console.log('background -> worker: init');
-    this.worker.postMessage({
-      type: 'init',
-      debug: debug
-    });
   },
 
   deactivate: function (silent) {
@@ -93,7 +97,7 @@ var dimensions = {
     this.port.onMessage.removeListener(this.receiveBrowserMessageClosure);
     this.port.onDisconnect.removeListener(this.onBrowserDisconnectClosure);
 
-    chrome.browserAction.setIcon({
+    chrome.action.setIcon({
       tabId: this.tab.id,
       path: {
         16: "images/icon16.png",
@@ -103,7 +107,7 @@ var dimensions = {
       }
     });
 
-    window.removeTab(this.tab.id);
+    removeTab(this.tab.id);
   },
 
   onBrowserDisconnect: function () {
@@ -128,38 +132,15 @@ var dimensions = {
     });
   },
 
-  receiveWorkerMessage: function (event) {
-    var forward = ['debug screen', 'distances', 'screenshot processed'];
-    if (forward.indexOf(event.data.type) > -1) {
-      this.port.postMessage(event.data);
-      console.log(
-        'worker -> background -> browser: ', event.data.type
-      );
-
-    }
-  },
 
   receiveBrowserMessage: function (event) {
-    var forward = ['position', 'area', 'imgBuffer'];
-
-    if (forward.indexOf(event.type) > -1) {
-      console.log(
-        'browser -> background -> worker: ', event.type
-      );
-      this.worker.postMessage(event);
-    } else {
-      console.log(
-        'browser -> background: ', event.type
-      );
-
-      switch (event.type) {
-        case 'take screenshot':
-          this.takeScreenshot();
-          break;
-        case 'close_overlay':
-          this.deactivate();
-          break;
-      }
+    switch (event.type) {
+      case 'take screenshot':
+        this.takeScreenshot();
+        break;
+      case 'close_overlay':
+        this.deactivate();
+        break;
     }
   },
 
@@ -168,7 +149,7 @@ var dimensions = {
       console.log('background -> browser: data');
 
       this.port.postMessage({
-        type: 'data',
+        type: 'screen data',
         data: {
           width: this.tab.width,
           height: this.tab.height,
