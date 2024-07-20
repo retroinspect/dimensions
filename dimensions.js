@@ -13,14 +13,21 @@ onmessage = function (event) {
     case 'imgBuffer':
       const eventData = JSON.parse(event.data.stringData);
       // imgData = new Uint8ClampedArray(eventData.imgBuffer);
-      imgData = eventData.imgData;
+      // imgData = new Uint8ClampedArray(eventData.imgData.buffer);
+      // imgData = eventData.imgData;
+      imgData = new Uint8ClampedArray(eventData.imgData);
       width = eventData.width;
       height = eventData.height;
       // TODO: gray scale does not work
       // it works for raw img data, but it's extremely slow
 
-      // data = grayscale(imgData);
-      data = imgData;
+      console.log('imgData');
+      console.log(imgData);
+      console.log(typeof (imgData));
+      console.log(imgData.length);
+
+      data = grayscale(imgData);
+      // data = imgData;
 
       console.log('imgData color from worker');
       console.log(getColorAt(435, 277, imgData, width, height));
@@ -362,6 +369,9 @@ function inBoundaries(x, y, width, height) {
 
 function grayscale(imgData) {
   var gray = new Int16Array(imgData.length / 4);
+
+  console.log('original: ', imgData.length);
+  console.log('grayscale: ', gray.length);
 
   for (var i = 0, n = 0, l = imgData.length; i < l; i += 4, n++) {
     var r = imgData[i],

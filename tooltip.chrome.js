@@ -70,7 +70,7 @@ port.onMessage.addListener(function (event) {
         console.log('byteLength: ', imgData.buffer.byteLength);
 
         const view = {
-          imgData,
+          imgData: Array.from(imgData),
           width,
           height
         };
