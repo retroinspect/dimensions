@@ -10,7 +10,7 @@ var lineColor = getLineColor();
 var colorThreshold = [0.2, 0.5, 0.2];
 var overlay = document.createElement('div');
 overlay.className = 'fn-noCursor';
-var debug;
+var debug = true;
 var canvas = document.createElement('canvas');
 var image = new Image();
 
@@ -60,12 +60,24 @@ port.onMessage.addListener(function (event) {
         canvas.width = width;
         canvas.height = height;
         ctx.drawImage(image, 0, 0, width, height);
-        const imgBuffer = ctx.getImageData(0, 0, width, height).data.buffer;
-        port.postMessage({
-          type: 'imgBuffer',
-          imgBuffer,
+        // const imgBuffer = ctx.getImageData(0, 0, width, height).data.buffer;
+        // const imgData = new Uint8ClampedArray(imgBuffer);
+
+        const imgData = ctx.getImageData(0, 0, width, height).data;
+        console.log('imgData color from browser');
+        console.log(getColorAt(435, 277, imgData, width, height));
+
+        console.log('byteLength: ', imgData.buffer.byteLength);
+
+        const view = {
+          imgData,
           width,
           height
+        };
+
+        port.postMessage({
+          type: 'imgBuffer',
+          stringData: JSON.stringify(view)
         });
       };
       break;
@@ -330,3 +342,52 @@ function rgbToHsl(r, g, b) {
 }
 
 init();
+
+
+
+function getColorAt(x, y, imgData, width, height) {
+  if (!inBoundaries(x, y, width, height))
+    return -1;
+
+  var i = y * width * 4 + x * 4;
+
+  return rgbToHsl(imgData[i], imgData[++i], imgData[++i]);
+}
+function inBoundaries(x, y, width, height) {
+  if (x >= 0 && x < width && y >= 0 && y < height)
+    return true;
+  else
+    return false;
+}
+
+/**
+ * Converts an RGB color value to HSL. Conversion formula
+ * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+ * Assumes r, g, and b are contained in the set [0, 255] and
+ * returns h, s, and l in the set [0, 1].
+ *
+ * @param   Number  r       The red color value
+ * @param   Number  g       The green color value
+ * @param   Number  b       The blue color value
+ * @return  Array           The HSL representation
+ */
+function rgbToHsl(r, g, b) {
+  r /= 255, g /= 255, b /= 255;
+  var max = Math.max(r, g, b), min = Math.min(r, g, b);
+  var h, s, l = (max + min) / 2;
+
+  if (max == min) {
+    h = s = 0; // achromatic
+  } else {
+    var d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+      case g: h = (b - r) / d + 2; break;
+      case b: h = (r - g) / d + 4; break;
+    }
+    h /= 6;
+  }
+
+  return [h, s, l];
+}

@@ -70,6 +70,8 @@ var dimensions = {
 
     this.worker = new Worker("dimensions.js");
     this.worker.onmessage = this.receiveWorkerMessage.bind(this);
+
+    console.log('background -> worker: init');
     this.worker.postMessage({
       type: 'init',
       debug: debug
@@ -83,8 +85,10 @@ var dimensions = {
       return;
     }
 
-    if (!silent)
+    if (!silent) {
+      console.log('background -> browser: destroy');
       this.port.postMessage({ type: 'destroy' });
+    }
 
     this.port.onMessage.removeListener(this.receiveBrowserMessageClosure);
     this.port.onDisconnect.removeListener(this.onBrowserDisconnectClosure);
@@ -117,6 +121,7 @@ var dimensions = {
 
     this.port.onMessage.addListener(this.receiveBrowserMessageClosure);
     this.port.onDisconnect.addListener(this.onBrowserDisconnectClosure);
+    console.log('background -> browser: init');
     this.port.postMessage({
       type: 'init',
       debug: debug
@@ -135,15 +140,18 @@ var dimensions = {
   },
 
   receiveBrowserMessage: function (event) {
-    var forward = ['position', 'area', 'data', 'imgBuffer'];
-
-    console.log(
-      'browser -> background: ', event.type
-    );
+    var forward = ['position', 'area', 'imgBuffer'];
 
     if (forward.indexOf(event.type) > -1) {
+      console.log(
+        'browser -> background -> worker: ', event.type
+      );
       this.worker.postMessage(event);
     } else {
+      console.log(
+        'browser -> background: ', event.type
+      );
+
       switch (event.type) {
         case 'take screenshot':
           this.takeScreenshot();
@@ -156,18 +164,17 @@ var dimensions = {
   },
 
   takeScreenshot: function () {
-    chrome.tabs.captureVisibleTab({ format: "png" }, this.parseScreenshot.bind(this));
-  },
+    chrome.tabs.captureVisibleTab({ format: "png" }, (dataUrl) => {
+      console.log('background -> browser: data');
 
-  parseScreenshot: function (dataUrl) {
-    this.port.postMessage({
-      type: 'data',
-      data: {
-        width: this.tab.width,
-        height: this.tab.height,
-        imgDataUrl: dataUrl,
-      }
+      this.port.postMessage({
+        type: 'data',
+        data: {
+          width: this.tab.width,
+          height: this.tab.height,
+          imgDataUrl: dataUrl,
+        }
+      });
     });
-  },
-
+  }
 };

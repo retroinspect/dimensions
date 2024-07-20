@@ -1,0 +1,26 @@
+{
+  "name": "Debug",
+  "description": "Debug",
+  "version": "2.0.5",
+  "manifest_version": 2,
+  "author": "retroinspect",
+  "background": {
+    "scripts": [
+      "chrome.js"
+    ],
+    "persistent": false
+  },
+  "commands": {
+    "_execute_browser_action": {
+      "suggested_key": {
+        "default": "Alt+D"
+      }
+    }
+  },
+  "browser_action": {
+    "default_title": "Measure Dimensions"
+  },
+  "permissions": [
+    "activeTab"
+  ]
+}

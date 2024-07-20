@@ -1,21 +1,30 @@
 var areaThreshold = 6;
 var dimensionsThreshold = 6;
-var debug = true;
+var debug;
 var map;
 var data;
 var imgData;
 
 onmessage = function (event) {
-  console.log('worker got event ' + event.data.type);
   switch (event.data.type) {
     case 'init':
       debug = event.data.debug;
       break;
     case 'imgBuffer':
-      imgData = new Uint8ClampedArray(event.data.imgBuffer);
-      data = grayscale(imgData);
-      width = event.data.width;
-      height = event.data.height;
+      const eventData = JSON.parse(event.data.stringData);
+      // imgData = new Uint8ClampedArray(eventData.imgBuffer);
+      imgData = eventData.imgData;
+      width = eventData.width;
+      height = eventData.height;
+      // TODO: gray scale does not work
+      // it works for raw img data, but it's extremely slow
+
+      // data = grayscale(imgData);
+      data = imgData;
+
+      console.log('imgData color from worker');
+      console.log(getColorAt(435, 277, imgData, width, height));
+
       postMessage({
         type: "screenshot processed"
       });
@@ -63,7 +72,7 @@ function measureArea(pos) {
   map = new Int16Array(data);
   x0 = pos.x;
   y0 = pos.y;
-  startLightness = getLightnessAt(map, x0, y0);
+  startLightness = getLightnessAt(map, x0, y0, width, height);
   stack = [[x0, y0, startLightness]];
   area = { top: y0, right: x0, bottom: y0, left: x0 };
   pixelsInArea = [];
@@ -102,10 +111,10 @@ function floodFill() {
   var x = xyl[0];
   var y = xyl[1];
   var lastLightness = xyl[2];
-  var currentLightness = getLightnessAt(map, x, y);
+  var currentLightness = getLightnessAt(map, x, y, width, height);
 
   if (currentLightness > -1 && currentLightness < 256 && Math.abs(currentLightness - lastLightness) < areaThreshold) {
-    setLightnessAt(map, x, y, 256);
+    setLightnessAt(map, x, y, 256, width, height);
     pixelsInArea.push([x, y]);
 
     if (x < area.left)
@@ -167,7 +176,7 @@ function finishMeasureArea() {
   area.top = area.y - area.top;
   area.bottom = area.bottom - area.y;
 
-  area.backgroundColor = getColorAt(area.x, area.y);
+  area.backgroundColor = getColorAt(area.x, area.y, imgData, width, height);
 
   postMessage({
     type: 'distances',
@@ -227,7 +236,7 @@ function measureDistances(input) {
     left: { x: -1, y: 0 }
   };
   var area = 0;
-  var startLightness = getLightnessAt(data, input.x, input.y);
+  var startLightness = getLightnessAt(data, input.x, input.y, width, height);
   var lastLightness;
 
   for (var direction in distances) {
@@ -243,7 +252,8 @@ function measureDistances(input) {
     while (!boundaryFound) {
       sx += vector.x;
       sy += vector.y;
-      currentLightness = getLightnessAt(data, sx, sy);
+      currentLightness = getLightnessAt(data, sx, sy, width, height);
+      console.log(currentLightness);
 
       if (currentLightness > -1 && Math.abs(currentLightness - lastLightness) < dimensionsThreshold) {
         distances[direction]++;
@@ -254,6 +264,8 @@ function measureDistances(input) {
     }
 
     area += distances[direction];
+
+
   }
 
   if (area <= 6) {
@@ -273,7 +285,7 @@ function measureDistances(input) {
       while (!boundaryFound) {
         sx += vector.x;
         sy += vector.y;
-        currentLightness = getLightnessAt(data, sx, sy);
+        currentLightness = getLightnessAt(data, sx, sy, width, height);
 
         if (currentLightness > -1) {
           distances[direction]++;
@@ -297,7 +309,10 @@ function measureDistances(input) {
 
   distances.x = input.x;
   distances.y = input.y;
-  distances.backgroundColor = getColorAt(input.x, input.y);
+  distances.backgroundColor = getColorAt(input.x, input.y, imgData, width, height);
+
+  console.log('distances:', distances);
+
 
   postMessage({
     type: 'distances',
@@ -305,8 +320,8 @@ function measureDistances(input) {
   });
 }
 
-function getColorAt(x, y) {
-  if (!inBoundaries(x, y))
+function getColorAt(x, y, imgData, width, height) {
+  if (!inBoundaries(x, y, width, height))
     return -1;
 
   var i = y * width * 4 + x * 4;
@@ -314,14 +329,15 @@ function getColorAt(x, y) {
   return rgbToHsl(imgData[i], imgData[++i], imgData[++i]);
 }
 
-function getLightnessAt(data, x, y) {
-  return inBoundaries(x, y) ? data[y * width + x] : -1;
+function getLightnessAt(data, x, y, width, height) {
+  const result = inBoundaries(x, y, width, height) ? data[y * width + x] : -1;
+  console.log('getLightnessAt: ', x, y, width, height, "/ result: ", result);
+  return result;
 }
 
-function setLightnessAt(data, x, y, value) {
-  return inBoundaries(x, y) ? data[y * width + x] = value : -1;
+function setLightnessAt(data, x, y, value, width, height) {
+  return inBoundaries(x, y, width, height) ? data[y * width + x] = value : -1;
 }
-
 
 //
 // inBoundaries
@@ -329,12 +345,13 @@ function setLightnessAt(data, x, y, value) {
 //  
 // checks if x and y are in the canvas boundaries
 //
-function inBoundaries(x, y) {
+function inBoundaries(x, y, width, height) {
   if (x >= 0 && x < width && y >= 0 && y < height)
     return true;
   else
     return false;
 }
+
 
 //
 // Grayscale
@@ -359,16 +376,16 @@ function grayscale(imgData) {
 }
 
 /**
- * Converts an RGB color value to HSL. Conversion formula
- * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
- * Assumes r, g, and b are contained in the set [0, 255] and
- * returns h, s, and l in the set [0, 1].
- *
- * @param   Number  r       The red color value
- * @param   Number  g       The green color value
- * @param   Number  b       The blue color value
- * @return  Array           The HSL representation
- */
+* Converts an RGB color value to HSL. Conversion formula
+* adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+* Assumes r, g, and b are contained in the set [0, 255] and
+* returns h, s, and l in the set [0, 1].
+*
+* @param   Number  r       The red color value
+* @param   Number  g       The green color value
+* @param   Number  b       The blue color value
+* @return  Array           The HSL representation
+*/
 function rgbToHsl(r, g, b) {
   r /= 255, g /= 255, b /= 255;
   var max = Math.max(r, g, b), min = Math.min(r, g, b);
