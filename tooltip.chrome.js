@@ -11,6 +11,8 @@ var colorThreshold = [0.2, 0.5, 0.2];
 var overlay = document.createElement('div');
 overlay.className = 'fn-noCursor';
 var debug;
+var canvas = document.createElement('canvas');
+var image = new Image();
 
 function init() {
   window.addEventListener('mousemove', onInputMove);
@@ -48,6 +50,24 @@ port.onMessage.addListener(function (event) {
       break;
     case 'destroy':
       destroy();
+      break;
+    case 'data':
+      console.log('data received', event.data);
+      const { width, height, imgDataUrl } = event.data;
+      image.src = imgDataUrl;
+      image.onload = () => {
+        const ctx = canvas.getContext('2d');
+        canvas.width = width;
+        canvas.height = height;
+        ctx.drawImage(image, 0, 0, width, height);
+        const imgBuffer = ctx.getImageData(0, 0, width, height).data.buffer;
+        port.postMessage({
+          type: 'imgBuffer',
+          imgBuffer,
+          width,
+          height
+        });
+      };
       break;
   }
 });

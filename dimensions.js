@@ -1,19 +1,24 @@
 var areaThreshold = 6;
 var dimensionsThreshold = 6;
-var debug;
+var debug = true;
 var map;
+var data;
+var imgData;
 
 onmessage = function (event) {
+  console.log('worker got event ' + event.data.type);
   switch (event.data.type) {
     case 'init':
       debug = event.data.debug;
       break;
-    case 'imgData':
-      imgData = new Uint8ClampedArray(event.data.imgData);
+    case 'imgBuffer':
+      imgData = new Uint8ClampedArray(event.data.imgBuffer);
       data = grayscale(imgData);
       width = event.data.width;
       height = event.data.height;
-      postMessage({ type: "screenshot processed" });
+      postMessage({
+        type: "screenshot processed"
+      });
       break;
     case 'position':
       measureAreaStopped = true;

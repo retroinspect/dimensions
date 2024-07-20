@@ -48,8 +48,6 @@ chrome.runtime.onSuspend.addListener(function () {
 });
 
 var dimensions = {
-  image: new Image(),
-  canvas: document.createElement('canvas'),
   alive: true,
 
   activate: function (tab) {
@@ -127,14 +125,21 @@ var dimensions = {
 
   receiveWorkerMessage: function (event) {
     var forward = ['debug screen', 'distances', 'screenshot processed'];
-
     if (forward.indexOf(event.data.type) > -1) {
       this.port.postMessage(event.data);
+      console.log(
+        'worker -> background -> browser: ', event.data.type
+      );
+
     }
   },
 
   receiveBrowserMessage: function (event) {
-    var forward = ['position', 'area'];
+    var forward = ['position', 'area', 'data', 'imgBuffer'];
+
+    console.log(
+      'browser -> background: ', event.type
+    );
 
     if (forward.indexOf(event.type) > -1) {
       this.worker.postMessage(event);
@@ -155,35 +160,14 @@ var dimensions = {
   },
 
   parseScreenshot: function (dataUrl) {
-    this.image.onload = this.loadImage.bind(this);
-    this.image.src = dataUrl;
+    this.port.postMessage({
+      type: 'data',
+      data: {
+        width: this.tab.width,
+        height: this.tab.height,
+        imgDataUrl: dataUrl,
+      }
+    });
   },
 
-  //
-  // loadImage
-  // ---------
-  //  
-  // responsible to load a image and extract the image data
-  //
-
-  loadImage: function () {
-    this.ctx = this.canvas.getContext('2d');
-
-    // adjust the canvas size to the image size
-    this.canvas.width = this.tab.width;
-    this.canvas.height = this.tab.height;
-
-    // draw the image to the canvas
-    this.ctx.drawImage(this.image, 0, 0, this.canvas.width, this.canvas.height);
-
-    // read out the image data from the canvas
-    var imgData = this.ctx.getImageData(0, 0, this.canvas.width, this.canvas.height).data;
-
-    this.worker.postMessage({
-      type: 'imgData',
-      imgData: imgData.buffer,
-      width: this.canvas.width,
-      height: this.canvas.height
-    }, [imgData.buffer]);
-  }
 };
