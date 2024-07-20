@@ -1,3 +1,27 @@
+
+
+
+
+function getDimensions(values) {
+    var min = Infinity;
+    var max = 0;
+
+    for (var i = 0, l = values.length; i < l; i++) {
+        if (values[i] < min)
+            min = values[i];
+        if (values[i] > max)
+            max = values[i];
+    }
+
+    return {
+        min: min,
+        center: min + Math.floor((max - min) / 2),
+        max: max,
+        length: max - min
+    };
+}
+
+
 function getColorAt(x, y, imgData, width, height) {
     if (!inBoundaries(x, y, width, height))
         return -1;
@@ -8,7 +32,8 @@ function getColorAt(x, y, imgData, width, height) {
 }
 
 function getLightnessAt(data, x, y, width, height) {
-    return inBoundaries(x, y, width, height) ? data[y * width + x] : -1;
+    const result = inBoundaries(x, y, width, height) ? data[y * width + x] : -1;
+    return result;
 }
 
 function setLightnessAt(data, x, y, value, width, height) {
@@ -38,7 +63,6 @@ function inBoundaries(x, y, width, height) {
 
 function grayscale(imgData) {
     var gray = new Int16Array(imgData.length / 4);
-
     for (var i = 0, n = 0, l = imgData.length; i < l; i += 4, n++) {
         var r = imgData[i],
             g = imgData[i + 1],
@@ -52,16 +76,16 @@ function grayscale(imgData) {
 }
 
 /**
- * Converts an RGB color value to HSL. Conversion formula
- * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
- * Assumes r, g, and b are contained in the set [0, 255] and
- * returns h, s, and l in the set [0, 1].
- *
- * @param   Number  r       The red color value
- * @param   Number  g       The green color value
- * @param   Number  b       The blue color value
- * @return  Array           The HSL representation
- */
+* Converts an RGB color value to HSL. Conversion formula
+* adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+* Assumes r, g, and b are contained in the set [0, 255] and
+* returns h, s, and l in the set [0, 1].
+*
+* @param   Number  r       The red color value
+* @param   Number  g       The green color value
+* @param   Number  b       The blue color value
+* @return  Array           The HSL representation
+*/
 function rgbToHsl(r, g, b) {
     r /= 255, g /= 255, b /= 255;
     var max = Math.max(r, g, b), min = Math.min(r, g, b);

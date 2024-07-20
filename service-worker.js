@@ -1,4 +1,3 @@
-var debug = false;
 var tabs = {};
 
 function toggle(tab) {
@@ -66,7 +65,7 @@ var dimensions = {
     chrome.scripting.executeScript(
       {
         target: { tabId: this.tab.id },
-        files: ['tooltip.chrome.js']
+        files: ['utils.js', 'tooltip.chrome.js']
       });
 
 
@@ -125,11 +124,6 @@ var dimensions = {
 
     this.port.onMessage.addListener(this.receiveBrowserMessageClosure);
     this.port.onDisconnect.addListener(this.onBrowserDisconnectClosure);
-    console.log('background -> browser: init');
-    this.port.postMessage({
-      type: 'init',
-      debug: debug
-    });
   },
 
 
@@ -146,8 +140,6 @@ var dimensions = {
 
   takeScreenshot: function () {
     chrome.tabs.captureVisibleTab({ format: "png" }, (dataUrl) => {
-      console.log('background -> browser: data');
-
       this.port.postMessage({
         type: 'screen data',
         data: {
